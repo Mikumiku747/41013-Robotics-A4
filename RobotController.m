@@ -101,6 +101,8 @@ classdef RobotController < handle
             % Prep for the callback
             if nargin > 3
                 runCallBack = true;
+            else
+                runCallBack = false;
             end
             % Set up the rate limiter to control the speed at which the
             % simulation runs
@@ -147,7 +149,7 @@ classdef RobotController < handle
                 error(4:6) * obj.dynamicRSpeed];
             % Calculate joint velocity
             j0 = robot.jacob0(obj.joints);
-            qVel = pinv(j0) * tVel;
+            qVel = inv(j0) * tVel;
             % Apply the joint velocity
             obj.joints = obj.joints + qVel * obj.controlFrequency;
         end
