@@ -11,14 +11,14 @@ classdef RobotController < handle
         use3DModel;
         %> Whether to actually plot the robot or not
         plotRobot;
+        %> Internal representation of the joint robot state
+        joints;
     end
     
     % Private properties
     properties (Access = private)
         %> Path to the robot's models
         modelPath;
-        %> Internal representation of the joint robot state
-        joints;
     end
     
     % Constants
@@ -136,10 +136,12 @@ classdef RobotController < handle
         %> function which specifies how the 
         %> 
         %> @param robot The robot to perform the move with
+        %> @param errorController The class which generates the error
+        %> values
         %> @param errorFunction The error function whihc guides the robot
-        function dynamicControl(obj, robot, errorFunction)
+        function dynamicControl(obj, robot, errorController, errorFunction)
             % Run the error function
-            [done, error] = errorFunction(robot, obj.joints);
+            [done, error] = errorFunction(errorController, robot, obj.joints);
             % Exit if OK!
             if done
                 return

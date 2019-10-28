@@ -33,16 +33,11 @@ function A4Task1()
     % Initial Pose based on combination of teach and ikcon
     q0 = deg2rad([48.87 58.09 -139.4 -0.005 -98.65 48.86]);
     p560.animate(q0);
+    Con.joints = q0;
     
     % Create the drum. 
     drumTrans = p560.base * transl(drumP(1), drumP(2), drumP(3));
     drum = PolyModel('Drum.ply', drumTrans);
-    
-    % Adjust the plot so the robot is centered
-    xlim([base(1)-1, base(1)+1]);
-    ylim([base(2)-1, base(2)+1]);
-    zlim([0 2]);
-    view([45 45]);
     
     % Create the camera, attach to the end of the robot.
     % We want the end effector to remain 0.3 meters from the points, and
@@ -54,5 +49,20 @@ function A4Task1()
     cam = CentralCamera('focal', 0.15, 'resolution', [800 600], ...
         'pixel', 5e-4, 'pose', p560.fkine(p560.getpos));
     cam.plot_camera();
-    cam.plot(targetP');
+    
+    % Create the visual servoing controller
+    vs = VServ();
+    vs.targetRectangle = targetP;
+    vs.cam = cam;
+    
+    % Adjust the plot so the robot is centered
+    xlim([base(1)-1, base(1)+1]);
+    ylim([base(2)-1, base(2)+1]);
+    zlim([0 2]);
+    view([45 45]);
+    
+    % Start by using visual servoing to dynamically control the robot until
+    % it is above the rectangle with points taking up most of the view
+    dynamicControl(Con, p560, vs, @servoBetween);
+    
 end
