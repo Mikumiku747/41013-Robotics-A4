@@ -104,10 +104,6 @@ classdef RobotController < handle
             else
                 runCallBack = false;
             end
-            % Set up the rate limiter to control the speed at which the
-            % simulation runs
-            rc = rateControl(obj.controlFrequency);
-            rc.OverrunAction = 'slip';
             % Iteratively plot each of the joints
             rc.reset();
             for i = 1:size(traj,1)
@@ -122,8 +118,6 @@ classdef RobotController < handle
                         return;
                     end
                 end
-                % Synchronize
-                rc.waitfor();
             end
         end
         
@@ -140,20 +134,31 @@ classdef RobotController < handle
         %> values
         %> @param errorFunction The error function whihc guides the robot
         function dynamicControl(obj, robot, errorController, errorFunction)
-            % Run the error function
-            [done, error] = errorFunction(errorController, robot, obj.joints);
-            % Exit if OK!
-            if done
-                return
+            while true
+                % Run the error function
+                [done, error] = errorFunction(errorController, robot, obj.joints);
+                % Exit if OK!
+                if done
+                    return
+                end
+                % If the error is too small, kick it up a minimum (the
+                % control function should set it zero for no movement).
+                if norm(error(1:2)) < 0.2
+                    error(1:2) = (error(1:2) / norm(error(1:2))) * 0.2;
+                end
+                if norm(error(3)) < 0.2
+                    error(3) = (error(3) / norm(error(3))) * 0.2;
+                end
+                % Calculate end effector velocity based on the error
+                tVel = [error(1:3) * obj.dynamicPSpeed, ...
+                    error(4:6) * obj.dynamicRSpeed];
+                % Calculate joint velocity
+                j0 = robot.jacob0(obj.joints);
+                qVel = (inv(j0) * tVel')';
+                % Apply the joint velocity
+                obj.joints = obj.joints + qVel / obj.controlFrequency;
+                robot.animate(obj.joints);
             end
-            % Calculate end effector velocity based on the error
-            tVel = [error(1:3) * obj.dynamicPSpeed, ...
-                error(4:6) * obj.dynamicRSpeed];
-            % Calculate joint velocity
-            j0 = robot.jacob0(obj.joints);
-            qVel = inv(j0) * tVel;
-            % Apply the joint velocity
-            obj.joints = obj.joints + qVel * obj.controlFrequency;
         end
     end
     

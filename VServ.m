@@ -15,6 +15,8 @@ classdef VServ < handle
         targetRectangle;
         %> A single point to servo over
         targetPoint;
+        %> Orientation to maintain whilst servoing (3x3 trot angles)
+        targetAngles;
         %> Camera handle
         cam;
     end
@@ -26,16 +28,12 @@ classdef VServ < handle
     
     % Constants
     properties (Constant)
-        %> Precision of Visual Servoing
-        servoPrecision = 0.005;
+        %> Precision of Visual Servoing (in px)
+        servoPrecision = 5;
         %> 'Center' coordinates
         centerCoords = [400 300];
-        %> XY error scale
-        xyErrorScale = diag([0.1 0.1]);
         %> Desired rectangle width
         rectWidth = 600;
-        %> Z error scale
-        zErrorScale = 0.1;
     end
     
     methods
@@ -46,20 +44,46 @@ classdef VServ < handle
             obj.cam.T = robot.fkine(joints);
             % Project the 4 points onto the camera
             obj.cam.plot(obj.targetRectangle');
+            obj.cam.plot_camera('scale', 0.05);
             projPoints = obj.cam.project(obj.targetRectangle')';
             % Calculate the center of those 4 points
             centerP = sum(projPoints)/size(projPoints,1);
             % Calculate the XY error
             error = nan(1,6);
-            error(1:2) = (centerP - obj.centerCoords) * obj.xyErrorScale;
+            xyError = (centerP - obj.centerCoords);
+            error(1:2) = xyError * obj.cam.rho(1);
+            % Correct the sense of the error vectors to match the tool
+            % coordinate space
+            error(1:2) = error(1:2) * [-1 0; 0 1];
+            fprintf('XY Pixel Error: %.2f\n', norm(xyError));
             % To calculate Z error ('closeness' error), we need to get the
             % size of the first edge of the rectangle
             width = norm(projPoints(1,:) - projPoints(2,:));
-            error(3) = log(width/obj.rectWidth) * obj.zErrorScale;
+            widthRatio = log(width/obj.rectWidth);
+            if abs(widthRatio) > 0.015
+                error(3) = widthRatio;
+            else
+                error(3) = 0;
+            end
+            fprintf('Z Ratio Error: %.2f\n', widthRatio);
             % Calculate the orientation and error to desired orientation
-            % TODO above
+            [k, r] = tr2angvec(robot.fkine(joints));
+            rAngles = r .* k;
+            rError = rAngles - obj.targetAngles;
+            for i = 1:size(rError, 2)
+                if rError(i) < pi/72
+                    error(3+i) = 0;
+                else
+                    error(3+i) = rError(i);
+                end
+            end
             % Check if the positional error is within precision
-            % TODO above
+            if norm(xyError) > obj.servoPrecision || ...
+                abs(widthRatio) > 0.015
+                done = false;
+            else
+                done = true;
+            end
         end
         
     end

@@ -48,12 +48,14 @@ function A4Task1()
     % 5e-4 m / px
     cam = CentralCamera('focal', 0.15, 'resolution', [800 600], ...
         'pixel', 5e-4, 'pose', p560.fkine(p560.getpos));
-    cam.plot_camera();
+    %cam.plot_camera();
     
     % Create the visual servoing controller
     vs = VServ();
     vs.targetRectangle = targetP;
     vs.cam = cam;
+    [k, r] = tr2angvec(p560.fkine(Con.joints));
+    vs.targetAngles = r .* k;
     
     % Adjust the plot so the robot is centered
     xlim([base(1)-1, base(1)+1]);
