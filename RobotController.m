@@ -26,7 +26,7 @@ classdef RobotController < handle
         %> Robot control frequency.
         controlFrequency = 30;
         %> Positional error correction speed
-        dynamicPSpeed = 0.2; % 200 mm/s
+        dynamicPSpeed = 0.5; % 500 mm/s
         %> Rotational error correction speed
         dynamicRSpeed = pi/2; % pi/2 rad/s
     end
@@ -146,8 +146,17 @@ classdef RobotController < handle
                 if norm(error(1:2)) < 0.2
                     error(1:2) = (error(1:2) / norm(error(1:2))) * 0.2;
                 end
+                if isnan(error(1))
+                    error(1) = 0;
+                end
+                if isnan(error(2))
+                    error(2) = 0;
+                end
                 if norm(error(3)) < 0.2
                     error(3) = (error(3) / norm(error(3))) * 0.2;
+                end
+                if isnan(error(3))
+                    error(3) = 0;
                 end
                 % Calculate end effector velocity based on the error
                 tVel = [error(1:3) * obj.dynamicPSpeed, ...

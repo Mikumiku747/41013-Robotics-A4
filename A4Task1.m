@@ -67,4 +67,14 @@ function A4Task1()
     % it is above the rectangle with points taking up most of the view
     dynamicControl(Con, p560, vs, @servoBetween);
     
+    % Next, visual servo to each of the four points
+    vs.targetPoint = targetP(1,:);
+    dynamicControl(Con, p560, vs, @servoTo);
+    vs.targetPoint = targetP(2,:);
+    dynamicControl(Con, p560, vs, @servoTo);
+    vs.targetPoint = targetP(3,:);
+    dynamicControl(Con, p560, vs, @servoTo);
+    vs.targetPoint = targetP(4,:);
+    dynamicControl(Con, p560, vs, @servoTo);
+    
 end

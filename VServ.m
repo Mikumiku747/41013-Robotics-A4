@@ -33,12 +33,12 @@ classdef VServ < handle
         %> 'Center' coordinates
         centerCoords = [400 300];
         %> Desired rectangle width
-        rectWidth = 600;
+        rectWidth = 300;
     end
     
     methods
         
-        % Visual Servo so that a rectangle is in view
+        %> Visual Servo so that a rectangle is in view
         function [done, error] = servoBetween(obj, robot, joints)
             % Update the camera to be at the robot's end effector
             obj.cam.T = robot.fkine(joints);
@@ -86,6 +86,42 @@ classdef VServ < handle
             end
         end
         
+        %> Visual Servo across to a point
+        function [done, error] = servoTo(obj, robot, joints)
+            % Update the camera to be at the robot's end effector
+            obj.cam.T = robot.fkine(joints);
+            % Project the target onto the camera
+            % Project the 4 points onto the camera
+            obj.cam.plot(obj.targetPoint');
+            obj.cam.plot_camera('scale', 0.05);
+            projPoint = obj.cam.project(obj.targetPoint')';
+            % Calculate the XY error
+            error = nan(1,6);
+            xyError = (projPoint - obj.centerCoords);
+            error(1:2) = xyError * obj.cam.rho(1);
+            % Correct the sense of the error vectors to match the tool
+            % coordinate space
+            error(1:2) = error(1:2) * [-1 0; 0 1];
+            % We don't move Z during this type of servo
+            error(3) = 0;
+            % Calculate the orientation and error to desired orientation
+            [k, r] = tr2angvec(robot.fkine(joints));
+            rAngles = r .* k;
+            rError = rAngles - obj.targetAngles;
+            for i = 1:size(rError, 2)
+                if rError(i) < pi/72
+                    error(3+i) = 0;
+                else
+                    error(3+i) = rError(i);
+                end
+            end
+            % Check if the positional error is within precision
+            if norm(xyError) > obj.servoPrecision
+                done = false;
+            else
+                done = true;
+            end
+        end
     end
     
 end
