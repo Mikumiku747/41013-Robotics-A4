@@ -13,6 +13,8 @@ classdef RobotController < handle
         plotRobot;
         %> Internal representation of the joint robot state
         joints;
+        %> Logging function callback
+        logCallback;
     end
     
     % Private properties
@@ -29,6 +31,8 @@ classdef RobotController < handle
         dynamicPSpeed = 0.5; % 500 mm/s
         %> Rotational error correction speed
         dynamicRSpeed = pi/2; % pi/2 rad/s
+        %> Minimim XYZ cartesian speed
+        minXYZSpeed = 0.1;
     end
     
     methods
@@ -105,7 +109,6 @@ classdef RobotController < handle
                 runCallBack = false;
             end
             % Iteratively plot each of the joints
-            rc.reset();
             for i = 1:size(traj,1)
                 % Move the robot.
                 if obj.plotRobot
@@ -134,6 +137,7 @@ classdef RobotController < handle
         %> values
         %> @param errorFunction The error function whihc guides the robot
         function dynamicControl(obj, robot, errorController, errorFunction)
+            logTime = 0;
             while true
                 % Run the error function
                 [done, error] = errorFunction(errorController, robot, obj.joints);
@@ -143,20 +147,13 @@ classdef RobotController < handle
                 end
                 % If the error is too small, kick it up a minimum (the
                 % control function should set it zero for no movement).
-                if norm(error(1:2)) < 0.2
-                    error(1:2) = (error(1:2) / norm(error(1:2))) * 0.2;
-                end
-                if isnan(error(1))
-                    error(1) = 0;
-                end
-                if isnan(error(2))
-                    error(2) = 0;
-                end
-                if norm(error(3)) < 0.2
-                    error(3) = (error(3) / norm(error(3))) * 0.2;
-                end
-                if isnan(error(3))
-                    error(3) = 0;
+                for i = 1:3
+                    if norm(error(i)) < obj.minXYZSpeed
+                        error(i) = (error(i) / norm(error(i))) * obj.minXYZSpeed;
+                    end
+                    if isnan(error(i))
+                        error(i) = 0;
+                    end
                 end
                 % Calculate end effector velocity based on the error
                 tVel = [error(1:3) * obj.dynamicPSpeed, ...
@@ -167,6 +164,11 @@ classdef RobotController < handle
                 % Apply the joint velocity
                 obj.joints = obj.joints + qVel / obj.controlFrequency;
                 robot.animate(obj.joints);
+                % Do logging if required
+                if ~isempty(obj.logCallback)
+                    logTime = logTime + 1/obj.controlFrequency;
+                    obj.logCallback(logTime, obj.joints, qVel, error);
+                end
             end
         end
     end

@@ -30,7 +30,7 @@ function A4Task1()
     mdl_puma560;
     p560.base = transl(base(1), base(2), 1);
     Con = RobotController(p560, '/home/daniel/arte/robots/UNIMATE/puma560');
-    % Initial Pose based on combination of teach and ikcon
+    % Initial Pose based on combination of manual teach and ikcon
     q0 = deg2rad([48.87 58.09 -139.4 -0.005 -98.65 48.86]);
     p560.animate(q0);
     Con.joints = q0;
@@ -72,9 +72,9 @@ function A4Task1()
     dynamicControl(Con, p560, vs, @servoTo);
     vs.targetPoint = targetP(2,:);
     dynamicControl(Con, p560, vs, @servoTo);
-    vs.targetPoint = targetP(3,:);
-    dynamicControl(Con, p560, vs, @servoTo);
     vs.targetPoint = targetP(4,:);
+    dynamicControl(Con, p560, vs, @servoTo);
+    vs.targetPoint = targetP(3,:);
     dynamicControl(Con, p560, vs, @servoTo);
     
 end

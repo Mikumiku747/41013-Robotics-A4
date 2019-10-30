@@ -55,7 +55,7 @@ classdef VServ < handle
             % Correct the sense of the error vectors to match the tool
             % coordinate space
             error(1:2) = error(1:2) * [-1 0; 0 1];
-            fprintf('XY Pixel Error: %.2f\n', norm(xyError));
+%             fprintf('XY Pixel Error: %.2f\n', norm(xyError));
             % To calculate Z error ('closeness' error), we need to get the
             % size of the first edge of the rectangle
             width = norm(projPoints(1,:) - projPoints(2,:));
@@ -65,7 +65,7 @@ classdef VServ < handle
             else
                 error(3) = 0;
             end
-            fprintf('Z Ratio Error: %.2f\n', widthRatio);
+%             fprintf('Z Ratio Error: %.2f\n', widthRatio);
             % Calculate the orientation and error to desired orientation
             [k, r] = tr2angvec(robot.fkine(joints));
             rAngles = r .* k;
