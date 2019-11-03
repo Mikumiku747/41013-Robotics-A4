@@ -11,6 +11,8 @@ classdef Navigate < handle
         destPos;
         %> Destination angles
         destAng;
+        % Controls how fast the movement occurs.
+        errorProportion = 0.1;
     end
     
     % Constants
@@ -45,7 +47,7 @@ classdef Navigate < handle
             if norm(pError) < obj.pPrecision
                 error(1:3) = zeros(1,3);
             else
-                error(1:3) = pError;
+                error(1:3) = (pError / norm(pError))*obj.errorProportion;
             end
             for i = 1:3
                 if rError(i) < obj.rPrecision

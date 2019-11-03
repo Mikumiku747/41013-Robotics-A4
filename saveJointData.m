@@ -11,6 +11,10 @@ function saveJointData(time, q, qVel, error)
     global data_qVel;
     global data_error;
     
+    if size(data_time, 1) > 0 && time < data_time(size(data_time,1))
+        time = time + data_time(size(data_time,1));
+    end
+    
     data_time = [data_time; time];
     data_q = [data_q; q];
     data_qVel = [data_qVel; qVel];

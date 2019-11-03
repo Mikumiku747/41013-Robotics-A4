@@ -8,31 +8,27 @@ classdef RobotController < handle
     % Public properties
     properties (Access = public)
         %> Enables pretty 3d plotting
-        use3DModel;
+        use3DModel = true;
         %> Whether to actually plot the robot or not
-        plotRobot;
+        plotRobot = true;
         %> Internal representation of the joint robot state
-        joints;
+        joints = [0 0 0 0 0 0];
         %> Logging function callback
         logCallback;
+        %> Robot control frequency.
+        controlFrequency = 20;
+        %> Positional error correction speed
+        dynamicPSpeed = 0.5; % 500 mm/s
+        %> Rotational error correction speed
+        dynamicRSpeed = pi/2; % pi/2 rad/s
+        %> Minimim XYZ cartesian speed
+        minXYZSpeed = 0.5 / 20;
     end
     
     % Private properties
     properties (Access = private)
         %> Path to the robot's models
         modelPath;
-    end
-    
-    % Constants
-    properties (Constant)
-        %> Robot control frequency.
-        controlFrequency = 30;
-        %> Positional error correction speed
-        dynamicPSpeed = 0.5; % 500 mm/s
-        %> Rotational error correction speed
-        dynamicRSpeed = pi/2; % pi/2 rad/s
-        %> Minimim XYZ cartesian speed
-        minXYZSpeed = 0.1;
     end
     
     methods
@@ -55,8 +51,6 @@ classdef RobotController < handle
                 plotRobot = true;
             end
             obj.plotRobot = plotRobot;
-            
-            obj.joints = zeros(1, size(robot.links,2));
             
             % Setup the controller
             if plotRobot
@@ -147,13 +141,8 @@ classdef RobotController < handle
                 end
                 % If the error is too small, kick it up a minimum (the
                 % control function should set it zero for no movement).
-                for i = 1:3
-                    if norm(error(i)) < obj.minXYZSpeed
-                        error(i) = (error(i) / norm(error(i))) * obj.minXYZSpeed;
-                    end
-                    if isnan(error(i))
-                        error(i) = 0;
-                    end
+                if norm(error(1:3)) < obj.minXYZSpeed
+                    error(1:3) = (error(1:3) / norm(error(1:3))) * obj.minXYZSpeed;
                 end
                 % Calculate end effector velocity based on the error
                 tVel = [error(1:3) * obj.dynamicPSpeed, ...

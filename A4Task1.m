@@ -5,6 +5,12 @@
 %> brief Performs a demonstration of task 1 of assignment 4. 
 function A4Task1()
     
+    % Globals for data recording
+    global data_time;
+    global data_q;
+    global data_qVel;
+    global data_error;
+
     % Robot Base Position
     base = [1.254 5.253 1];
     % Drum offset from robot
@@ -26,10 +32,17 @@ function A4Task1()
     clf();
     hold on;
     
+    % Clear out the logging variables
+    data_time = [];
+    data_q = [];
+    data_qVel = [];
+    data_error = [];
+    
     % Create the robot and controller. 
     mdl_puma560;
     p560.base = transl(base(1), base(2), 1);
     Con = RobotController(p560, '/home/daniel/arte/robots/UNIMATE/puma560');
+    Con.logCallback = @saveJointData;
     % Initial Pose based on combination of manual teach and ikcon
     q0 = deg2rad([48.87 58.09 -139.4 -0.005 -98.65 48.86]);
     p560.animate(q0);
@@ -76,5 +89,8 @@ function A4Task1()
     dynamicControl(Con, p560, vs, @servoTo);
     vs.targetPoint = targetP(3,:);
     dynamicControl(Con, p560, vs, @servoTo);
+    
+    % Plot the data from the results
+    plotJointData(data_time, data_q, data_qVel, data_error);
     
 end
